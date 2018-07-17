@@ -1,0 +1,4 @@
+redis{
+    0:cache
+    1:user_share
+}

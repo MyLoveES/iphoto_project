@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="dataSourceStorageLocal">
+    <data-source name="Django default" uuid="a0d3ac0f-7f11-4f1d-9d16-66ac23dd51eb">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" />
+      <introspection-schemas>*:iphoto</introspection-schemas>
+    </data-source>
+  </component>
+</project>
