@@ -42,7 +42,6 @@ def face_detect(photo):
 
 def face_detect_baidu(photo):
     result = face_api.face_detect(photo.file.open().read(), imageType="BASE64")
-    print("detect result: ", result)
     if result.get('data').get('error_code') == 0:
         face_num = result.get('data').get('result').get('face_num')
         if face_num == 1:
@@ -75,9 +74,7 @@ def face_recognition(face1, face2):
     # url= "http://106.15.183.211:8000/judge_face/"
     url = "http://106.15.183.211:8000/two_face/"
     reponse = requests.post(url, data=data, files=files)
-    print('EEEEEEEEEEEEsfag:', reponse.text)
     score = reponse.json().get('result')
-    print("SSSSSSSSSSSSSSSSSSSSSore:", score)
     return score
 
 
@@ -103,15 +100,13 @@ def face_recognition_baidu(face1, face2):
 
 @shared_task
 def kafka_produce(kafka_message):
-    print("task begin")
     photo_id = kafka_message.get('photo')
-    print("photo_id:", photo_id)
     face_file_new = Photo.objects.filter(id=photo_id).first()
     # with face_file_new.file.open() as file1:
     #     photo = file1.read()
     #     file1.close()
     # face_detect_result = face_detect(photo)
-    face_detect_result = face_detect_baidu(face_file_new)
+    face_detect_result = face_detect(face_file_new)
     client = KafkaClient(hosts="106.15.191.61:9092")
     topic = client.topics["entity".encode()]
     last_offset = topic.latest_available_offsets()
@@ -125,14 +120,11 @@ def kafka_produce(kafka_message):
         #         return 'Successfully delivered msg {}'.format(msg.partition_key)
         # except Queue.Empty:
         #     return 'Queue Empty ERROR'
-    print("face_detect_result:", face_detect_result)
     if face_detect_result == "face":
         face_score = {}
         user = UserProfile.objects.filter(id=kafka_message.get('user')).first()
         # face_path = kafka_message.get('photo_filepath')
-        print('face_file_new:', face_file_new)
         face_queryset = Face.objects.filter(user=user)
-        print('face_queryset :', face_queryset)
         if not face_queryset.exists():
             times = 0
             while True:
@@ -150,10 +142,8 @@ def kafka_produce(kafka_message):
             print('face:', face.face)
             file_score = []
             facefile_queryset = FaceFile.objects.filter(face=face)
-            print('facefile_queryset:', facefile_queryset.exists())
             for face_file in facefile_queryset:
                 face_file_old = face_file.photo
-                print('face_file_old:', face_file_old.id)
                 # with face_file_new.file.open() as file1:
                 #     file_new = file1.read()
                 #     file1.close()
@@ -161,15 +151,10 @@ def kafka_produce(kafka_message):
                 #     file_old = file2.read()
                 #     file2.close()
                 # score = face_recognition(file_new, file_old)
-                score = face_recognition_baidu(face_file_new, face_file_old)
-                print('score:', score)
+                score = face_recognition(face_file_new, face_file_old)
                 file_score.append(score)
-            print('face_score:', face_score)
             face_score[face.face] = sum(file_score) / len(file_score) if len(file_score) != 0 else 0
-            print('face_score[face.face]:', face_score[face.face])
-        print('face_score:', face_score)
         face_score_tup_list = sorted(face_score.items(), key=lambda item: item[1], reverse=True)
-        print('face_score_tup_list:', face_score_tup_list)
         face_score_tup = face_score_tup_list[0]
         face = face_score_tup[0]
         score = face_score_tup[1]
